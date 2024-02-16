@@ -31,7 +31,7 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
     /// Indicates whether the CMP has determined that consent should be collected from the user.
     public var shouldCollectConsent: Bool {
         UMPConsentInformation.sharedInstance.formStatus == .available
-        // TODO: also unknown? what happens after reset()? does it turn into unknown until consent info is updated again? what would we expect to happen?
+            && UMPConsentInformation.sharedInstance.consentStatus == .required
     }
 
     /// The current consent status determined by the CMP.
