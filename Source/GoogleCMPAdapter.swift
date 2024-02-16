@@ -6,10 +6,17 @@
 import ChartboostCoreSDK
 import UserMessagingPlatform
 
+private let IABUserDefaultsTCFKey = "IABTCF_TCString"
+private let IABUserDefaultsGPPKey = "IABGPP_HDR_GppString"
+private let IABUserDefaultsUSPKey = "IABUSPrivacy_String"
+
 /// Chartboost Core Consent Usercentrics adapter.
 @objc(CBCGoogleCMPAdapter)
 @objcMembers
 public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapter {
+
+    /// A flag indicating if the adapter is registered as an observer for changes on UserDefault's consent-related keys.
+    private var isObservingConsentChanges = false
 
     // MARK: - Properties
 
@@ -36,23 +43,17 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
 
     /// The current consent status determined by the CMP.
     public var consentStatus: ConsentStatus {
-        switch UMPConsentInformation.sharedInstance.consentStatus {
-        case .unknown:
-            return .unknown
-        case .required:
-            return .denied
-        case .notRequired, .obtained:
-            return .granted
-        @unknown default:
-            return .unknown
-        }
+        // UMPConsentInformation.sharedInstance.consentStatus doesn't indicate if the user has consented or not.
+        // See https://developers.google.com/admob/ios/privacy/gdpr
+        return .unknown
     }
 
     /// Individualized consent status per partner SDK.
     ///
     /// The keys for advertising SDKs should match Chartboost Mediation partner adapter ids.
     public var partnerConsentStatus: [String: ConsentStatus] {
-        [:] // Google User Messaging Platform does not provide consent status per partner
+        // Google User Messaging Platform does not provide consent status per partner beyond what's available on the IAB UserDefaults keys.
+        [:]
     }
 
     /// Detailed consent status for each consent standard, as determined by the CMP.
@@ -66,9 +67,9 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
     /// for ``ConsentStandard/tcf``).
     public var consents: [ConsentStandard : ConsentValue] {
         var consents: [ConsentStandard: ConsentValue] = [:]
-        consents[.gpp] = UserDefaults.standard.string(forKey: "IABGPP_HDR_GppString").map(ConsentValue.init(stringLiteral:))
-        consents[.tcf] = UserDefaults.standard.string(forKey: "IABTCF_TCString").map(ConsentValue.init(stringLiteral:))
-        consents[.usp] = UserDefaults.standard.string(forKey: "IABUSPrivacy_String").map(ConsentValue.init(stringLiteral:))
+        consents[.gpp] = UserDefaults.standard.string(forKey: IABUserDefaultsGPPKey).map(ConsentValue.init(stringLiteral:))
+        consents[.tcf] = UserDefaults.standard.string(forKey: IABUserDefaultsTCFKey).map(ConsentValue.init(stringLiteral:))
+        consents[.usp] = UserDefaults.standard.string(forKey: IABUserDefaultsUSPKey).map(ConsentValue.init(stringLiteral:))
         return consents
     }
 
@@ -104,6 +105,10 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
         }
     }
 
+    deinit {
+        stopObservingConsentChanges()
+    }
+
     /// Sets up the module to make it ready to be used.
     /// - parameter configuration: A ``ModuleInitializationConfiguration`` for configuring the module.
     /// - parameter completion: A completion handler to be executed when the module is done initializing.
@@ -112,15 +117,9 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
         // Configure the SDK and fetch initial consent status.
         // We don't report consent changes to the delegate here since we are restoring the info from whatever the SDK has saved.
         log("Requesting consent info update", level: .debug)
-        let request = UMPRequestParameters()
-        request.tagForUnderAgeOfConsent = ChartboostCore.analyticsEnvironment.isUserUnderage
-        request.debugSettings = Self.debugSettings
-        UMPConsentInformation.sharedInstance.requestConsentInfoUpdate(with: request) { [weak self] error in
-            if let error {
-                self?.log("Consent info update failed with error: \(error)", level: .error)
-            } else {
-                self?.log("Consent info update succeeded", level: .info)
-            }
+        updateConsentInfo { [weak self] error in
+            completion(error)
+            self?.startObservingConsentChanges()
         }
     }
 
@@ -160,7 +159,8 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
         // Reset all consents
         log("Resetting consent", level: .debug)
         UMPConsentInformation.sharedInstance.reset()
-        // TODO: Need to call requestConsentInfoUpdate() again?
+        updateConsentInfo(completion: nil)
+        completion(true)
     }
 
     /// Instructs the CMP to present a consent dialog to the user for the purpose of collecting consent.
@@ -196,6 +196,53 @@ public final class GoogleCMPAdapter: NSObject, InitializableModule, ConsentAdapt
                 self.log("Could not show consent dialog with unknown type: \(type)", level: .error)
                 completion(false)
             }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func updateConsentInfo(completion: ((Error?) -> Void)?) {
+        let request = UMPRequestParameters()
+        request.tagForUnderAgeOfConsent = ChartboostCore.analyticsEnvironment.isUserUnderage
+        request.debugSettings = Self.debugSettings
+        UMPConsentInformation.sharedInstance.requestConsentInfoUpdate(with: request) { [weak self] error in
+            if let error {
+                self?.log("Consent info update failed with error: \(error)", level: .error)
+            } else {
+                self?.log("Consent info update succeeded", level: .info)
+            }
+            completion?(error)
+        }
+    }
+
+    private func startObservingConsentChanges() {
+        UserDefaults.standard.addObserver(self, forKeyPath: IABUserDefaultsTCFKey, context: nil)
+        UserDefaults.standard.addObserver(self, forKeyPath: IABUserDefaultsGPPKey, context: nil)
+        UserDefaults.standard.addObserver(self, forKeyPath: IABUserDefaultsUSPKey, context: nil)
+        isObservingConsentChanges = true
+    }
+
+    private func stopObservingConsentChanges() {
+        // Note it is an error to try to remove an observer that hasn't been previously registered as such
+        if isObservingConsentChanges {
+            UserDefaults.standard.removeObserver(self, forKeyPath: IABUserDefaultsTCFKey)
+            UserDefaults.standard.removeObserver(self, forKeyPath: IABUserDefaultsGPPKey)
+            UserDefaults.standard.removeObserver(self, forKeyPath: IABUserDefaultsUSPKey)
+        }
+    }
+
+    public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        log("User defaults change, key: '\(keyPath ?? "")' value: \(UserDefaults.standard.value(forKey: keyPath ?? "") ?? "")", level: .trace)
+
+        switch keyPath {
+        case IABUserDefaultsTCFKey:
+            delegate?.onConsentChange(standard: .tcf, value: consents[.tcf])
+        case IABUserDefaultsGPPKey:
+            delegate?.onConsentChange(standard: .gpp, value: consents[.gpp])
+        case IABUserDefaultsUSPKey:
+            delegate?.onConsentChange(standard: .usp, value: consents[.usp])
+        default:
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
 }
