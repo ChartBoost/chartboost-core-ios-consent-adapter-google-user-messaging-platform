@@ -1,6 +1,6 @@
-# Chartboost Core Google CMP Adapter
+# Chartboost Core Google UMP Adapter
 
-The Chartboost Core Google CMP adapter mediates Google CMP via the Chartboost Core SDK.
+The Chartboost Core Google UMP adapter mediates Google UMP via the Chartboost Core SDK.
 
 ## Minimum Requirements
 
@@ -15,7 +15,7 @@ The Chartboost Core Google CMP adapter mediates Google CMP via the Chartboost Co
 
 In your `Podfile`, add the following entry:
 ```
-pod 'ChartboostCoreConsentAdapterGoogleCMP'
+pod 'ChartboostCoreConsentAdapterGoogleUMP'
 ```
 
 ## Contributions
