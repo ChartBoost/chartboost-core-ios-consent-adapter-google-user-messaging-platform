@@ -21,7 +21,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     // MARK: - Properties
 
     /// The module identifier.
-    public let moduleID = "google-user-messaging-platform"
+    public let moduleID = "google_user_messaging_platform"
 
     /// The version of the module.
     public let moduleVersion = "1.2.1.0.0"
