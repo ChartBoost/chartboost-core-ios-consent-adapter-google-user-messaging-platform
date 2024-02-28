@@ -15,8 +15,8 @@ private let IABUserDefaultsUSPKey = "IABUSPrivacy_String"
 @objcMembers
 public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableModule, ConsentAdapter {
 
-    /// A flag indicating if the adapter is registered as an observer for changes on UserDefault's consent-related keys.
-    private var isObservingConsentChanges = false
+    /// The observer for changes on UserDefault's consent-related keys.
+    private var userDefaultsObserver: NSObject?
 
     // MARK: - Properties
 
@@ -26,7 +26,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     /// The version of the module.
     public let moduleVersion = "1.2.1.0.0"
 
-    /// The delegate to be notified whenever any change happens in the CMP consent status.
+    /// The delegate to be notified whenever any change happens in the CMP consent info.
     /// This delegate is set by Core SDK and is an essential communication channel between Core and the CMP.
     /// Adapters should not set it themselves.
     public weak var delegate: ConsentAdapterDelegate?
@@ -41,36 +41,19 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
             && UMPConsentInformation.sharedInstance.consentStatus == .required
     }
 
-    /// The current consent status determined by the CMP.
-    public var consentStatus: ConsentStatus {
-        // UMPConsentInformation.sharedInstance.consentStatus doesn't indicate if the user has consented or not.
-        // See https://developers.google.com/admob/ios/privacy/gdpr
-        return .unknown
-    }
-
-    /// Individualized consent status per partner SDK.
+    /// Current user consent info as determined by the CMP.
     ///
-    /// The keys for advertising SDKs should match Chartboost Mediation partner adapter ids.
-    public var partnerConsentStatus: [String: ConsentStatus] {
-        // Google User Messaging Platform does not provide consent status per partner beyond what's available on the IAB UserDefaults keys.
-        [:]
-    }
-
-    /// Detailed consent status for each consent standard, as determined by the CMP.
+    /// Consent info may include IAB strings, like TCF or GPP, and parsed boolean-like signals like "CCPA Opt In Sale"
+    /// and partner-specific signals.
     ///
-    /// Predefined consent standard constants, such as ``ConsentStandard/usp`` and ``ConsentStandard/tcf``, are provided
+    /// Predefined consent key constants, such as ``ConsentKeys/tcf`` and ``ConsentKeys/usp``, are provided
     /// by Core. Adapters should use them when reporting the status of a common standard.
-    /// Custom standards should only be used by adapters when a corresponding constant is not provided by the Core.
+    /// Custom keys should only be used by adapters when a corresponding constant is not provided by the Core.
     ///
-    /// While Core also provides consent value constants, these are only applicable for the ``ConsentStandard/ccpa`` and
-    /// ``ConsentStandard/gdpr`` standards. For other standards a custom value should be provided (e.g. a IAB TCF string
-    /// for ``ConsentStandard/tcf``).
+    /// Predefined consent value constants are also proivded, but are only applicable to non-IAB string keys, like
+    /// ``ConsentKeys/ccpaOptIn`` and ``ConsentKeys/gdprConsentGiven``.
     public var consents: [ConsentStandard : ConsentValue] {
-        var consents: [ConsentStandard: ConsentValue] = [:]
-        consents[.gpp] = UserDefaults.standard.string(forKey: IABUserDefaultsGPPKey).map(ConsentValue.init(stringLiteral:))
-        consents[.tcf] = UserDefaults.standard.string(forKey: IABUserDefaultsTCFKey).map(ConsentValue.init(stringLiteral:))
-        consents[.usp] = UserDefaults.standard.string(forKey: IABUserDefaultsUSPKey).map(ConsentValue.init(stringLiteral:))
-        return consents
+        userDefaultsIABStrings()
     }
 
     // MARK: - Instantiation and Initialization
@@ -105,10 +88,6 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
         }
     }
 
-    deinit {
-        stopObservingConsentChanges()
-    }
-
     /// Sets up the module to make it ready to be used.
     /// - parameter configuration: A ``ModuleInitializationConfiguration`` for configuring the module.
     /// - parameter completion: A completion handler to be executed when the module is done initializing.
@@ -118,8 +97,8 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
         // We don't report consent changes to the delegate here since we are restoring the info from whatever the SDK has saved.
         log("Requesting consent info update", level: .debug)
         updateConsentInfo { [weak self] error in
+            userDefaultsObserver = startObservingUserDefaultsIABStrings()
             completion(error)
-            self?.startObservingConsentChanges()
         }
     }
 
@@ -131,9 +110,9 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     /// be used instead.
     /// If the CMP does not support custom consent dialogs or the operation fails for any other reason, the completion
     /// handler is executed with a `false` parameter.
-    /// - parameter source: The source of the new consent. See the ``ConsentStatusSource`` documentation for more info.
+    /// - parameter source: The source of the new consent. See the ``ConsentSource`` documentation for more info.
     /// - parameter completion: Handler called to indicate if the operation went through successfully or not.
-    public func grantConsent(source: ConsentStatusSource, completion: @escaping (_ succeeded: Bool) -> Void) {
+    public func grantConsent(source: ConsentSource, completion: @escaping (_ succeeded: Bool) -> Void) {
         log("Granting consent is not supported", level: .warning)
         completion(false)   // Google User Messaging Platform does not support custom consent dialogs
     }
@@ -144,9 +123,9 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     /// be used instead.
     /// If the CMP does not support custom consent dialogs or the operation fails for any other reason, the completion
     /// handler is executed with a `false` parameter.
-    /// - parameter source: The source of the new consent. See the ``ConsentStatusSource`` documentation for more info.
+    /// - parameter source: The source of the new consent. See the ``ConsentSource`` documentation for more info.
     /// - parameter completion: Handler called to indicate if the operation went through successfully or not.
-    public func denyConsent(source: ConsentStatusSource, completion: @escaping (_ succeeded: Bool) -> Void) {
+    public func denyConsent(source: ConsentSource, completion: @escaping (_ succeeded: Bool) -> Void) {
         log("Denying consent is not supported", level: .warning)
         completion(false)   // Google User Messaging Platform does not support custom consent dialogs
     }
@@ -212,37 +191,6 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
                 self?.log("Consent info update succeeded", level: .info)
             }
             completion?(error)
-        }
-    }
-
-    private func startObservingConsentChanges() {
-        UserDefaults.standard.addObserver(self, forKeyPath: IABUserDefaultsTCFKey, context: nil)
-        UserDefaults.standard.addObserver(self, forKeyPath: IABUserDefaultsGPPKey, context: nil)
-        UserDefaults.standard.addObserver(self, forKeyPath: IABUserDefaultsUSPKey, context: nil)
-        isObservingConsentChanges = true
-    }
-
-    private func stopObservingConsentChanges() {
-        // Note it is an error to try to remove an observer that hasn't been previously registered as such
-        if isObservingConsentChanges {
-            UserDefaults.standard.removeObserver(self, forKeyPath: IABUserDefaultsTCFKey)
-            UserDefaults.standard.removeObserver(self, forKeyPath: IABUserDefaultsGPPKey)
-            UserDefaults.standard.removeObserver(self, forKeyPath: IABUserDefaultsUSPKey)
-        }
-    }
-
-    public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        log("User defaults change, key: '\(keyPath ?? "")' value: \(UserDefaults.standard.value(forKey: keyPath ?? "") ?? "")", level: .trace)
-
-        switch keyPath {
-        case IABUserDefaultsTCFKey:
-            delegate?.onConsentChange(standard: .tcf, value: consents[.tcf])
-        case IABUserDefaultsGPPKey:
-            delegate?.onConsentChange(standard: .gpp, value: consents[.gpp])
-        case IABUserDefaultsUSPKey:
-            delegate?.onConsentChange(standard: .usp, value: consents[.usp])
-        default:
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
 }
