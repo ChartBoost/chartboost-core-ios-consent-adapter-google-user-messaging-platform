@@ -6,7 +6,7 @@ The Chartboost Core Google User Messaging Platform adapter mediates Google UserM
 
 | Plugin | Version |
 | ------ | ------ |
-| Chartboost Core SDK | 0.0.0+ |
+| Chartboost Core SDK | 1.0.0+ |
 | Cocoapods | 1.11.3+ |
 | iOS | 11.0+ |
 | Xcode | 14.1+ |
