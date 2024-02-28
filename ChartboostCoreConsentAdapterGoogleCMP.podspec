@@ -1,15 +1,15 @@
 Pod::Spec.new do |spec|
-  spec.name        = 'ChartboostCoreConsentAdapterGoogleUMP'
+  spec.name        = 'ChartboostCoreConsentAdapterGoogleUserMessagingPlatform'
   spec.version     = '0.2.1.0.0'
   spec.license     = { :type => 'MIT', :file => 'LICENSE.md' }
-  spec.homepage    = 'https://github.com/ChartBoost/chartboost-core-ios-consent-adapter-google-ump'
+  spec.homepage    = 'https://github.com/ChartBoost/chartboost-core-ios-consent-adapter-google-user-messaging-platform'
   spec.authors     = { 'Chartboost' => 'https://www.chartboost.com/' }
-  spec.summary     = 'Chartboost Core iOS SDK Google UMP Adapter.'
-  spec.description = 'Google UMP adapters for mediating through Chartboost Core.'
+  spec.summary     = 'Chartboost Core iOS SDK Google User Messaging Platform Adapter.'
+  spec.description = 'Google User Messaging Platform adapters for mediating through Chartboost Core.'
 
   # Source
-  spec.module_name  = 'ChartboostCoreConsentAdapterGoogleUMP'
-  spec.source       = { :git => 'https://github.com/ChartBoost/chartboost-core-ios-consent-adapter-google-ump.git', :tag => spec.version }
+  spec.module_name  = 'ChartboostCoreConsentAdapterGoogleUserMessagingPlatform'
+  spec.source       = { :git => 'https://github.com/ChartBoost/chartboost-core-ios-consent-adapter-google-user-messaging-platform.git', :tag => spec.version }
   spec.source_files = 'Source/**/*.{swift}'
 
   # Minimum supported versions

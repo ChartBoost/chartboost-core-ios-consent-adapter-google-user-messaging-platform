@@ -1,6 +1,6 @@
-# Chartboost Core Google UMP Adapter
+# Chartboost Core Google User Messaging Platform Adapter
 
-The Chartboost Core Google UMP adapter mediates Google UMP via the Chartboost Core SDK.
+The Chartboost Core Google User Messaging Platform adapter mediates Google UserMessagingPlatform via the Chartboost Core SDK.
 
 ## Minimum Requirements
 
@@ -15,7 +15,7 @@ The Chartboost Core Google UMP adapter mediates Google UMP via the Chartboost Co
 
 In your `Podfile`, add the following entry:
 ```
-pod 'ChartboostCoreConsentAdapterGoogleUMP'
+pod 'ChartboostCoreConsentAdapterGoogleUserMessagingPlatform'
 ```
 
 ## Contributions

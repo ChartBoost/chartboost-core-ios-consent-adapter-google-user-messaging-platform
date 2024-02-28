@@ -10,10 +10,10 @@ private let IABUserDefaultsTCFKey = "IABTCF_TCString"
 private let IABUserDefaultsGPPKey = "IABGPP_HDR_GppString"
 private let IABUserDefaultsUSPKey = "IABUSPrivacy_String"
 
-/// Chartboost Core Consent Usercentrics adapter.
-@objc(CBCGoogleUMPAdapter)
+/// Chartboost Core Consent Google User Messaging Platform adapter.
+@objc(CBCGoogleUserMessagingPlatformAdapter)
 @objcMembers
-public final class GoogleUMPAdapter: NSObject, InitializableModule, ConsentAdapter {
+public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableModule, ConsentAdapter {
 
     /// A flag indicating if the adapter is registered as an observer for changes on UserDefault's consent-related keys.
     private var isObservingConsentChanges = false
@@ -21,7 +21,7 @@ public final class GoogleUMPAdapter: NSObject, InitializableModule, ConsentAdapt
     // MARK: - Properties
 
     /// The module identifier.
-    public let moduleID = "google-ump"
+    public let moduleID = "google-user-messaging-platform"
 
     /// The version of the module.
     public let moduleVersion = "0.2.1.0.0"
