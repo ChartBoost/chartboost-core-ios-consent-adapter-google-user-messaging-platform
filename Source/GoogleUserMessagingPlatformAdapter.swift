@@ -15,9 +15,6 @@ private let IABUserDefaultsUSPKey = "IABUSPrivacy_String"
 @objcMembers
 public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableModule, ConsentAdapter {
 
-    /// The observer for changes on UserDefault's consent-related keys.
-    private var userDefaultsObserver: NSObject?
-
     // MARK: - Properties
 
     /// The module identifier.
@@ -52,11 +49,19 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     ///
     /// Predefined consent value constants are also proivded, but are only applicable to non-IAB string keys, like
     /// ``ConsentKeys/ccpaOptIn`` and ``ConsentKeys/gdprConsentGiven``.
-    public var consents: [ConsentStandard : ConsentValue] {
+    public var consents: [ConsentKey : ConsentValue] {
         userDefaultsIABStrings()
     }
 
+    /// The observer for changes on UserDefault's consent-related keys.
+    private var userDefaultsObserver: NSObject?
+
     // MARK: - Instantiation and Initialization
+
+    /// Instantiates a ``GoogleUserMessagingPlatformAdapter`` module which can be passed on a call to ``ChartboostCore/initializeSDK(with:moduleObserver:)``.
+    override public init() {
+        super.init()
+    }
 
     /// The designated initializer for the module.
     /// The Chartboost Core SDK will invoke this initializer when instantiating modules defined on
@@ -97,7 +102,10 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
         // We don't report consent changes to the delegate here since we are restoring the info from whatever the SDK has saved.
         log("Requesting consent info update", level: .debug)
         updateConsentInfo { [weak self] error in
-            userDefaultsObserver = startObservingUserDefaultsIABStrings()
+            guard let self else {
+                return
+            }
+            self.userDefaultsObserver = self.startObservingUserDefaultsIABStrings()
             completion(error)
         }
     }
