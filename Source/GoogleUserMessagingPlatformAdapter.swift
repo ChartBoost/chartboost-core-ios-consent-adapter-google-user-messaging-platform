@@ -49,7 +49,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     ///
     /// Predefined consent value constants are also proivded, but are only applicable to non-IAB string keys, like
     /// ``ConsentKeys/ccpaOptIn`` and ``ConsentKeys/gdprConsentGiven``.
-    public var consents: [ConsentKey : ConsentValue] {
+    public var consents: [ConsentKey: ConsentValue] {
         userDefaultsIABStrings()
     }
 
@@ -72,9 +72,9 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     /// - note: Modules should not perform costly operations on this initializer.
     /// Chartboost Core SDK may instantiate and discard several instances of the same module.
     /// Chartboost Core SDK keeps strong references to modules that are successfully initialized.
-    public init(credentials: [String : Any]?) {
+    public init(credentials: [String: Any]?) {
         super.init()
-        
+
         // Populate debug settings with backend info if available, and only it hasn't already been
         // set programmatically by the publisher.
         if Self.debugSettings == nil {
@@ -83,8 +83,9 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
                 debugSettings.testDeviceIdentifiers = testDeviceIdentifiers
                 log("Test device identifiers updated with backend config", level: .debug)
             }
-            if let geographyRawValue = credentials?["geography"] as? Int,
-               let geography = UMPDebugGeography(rawValue: geographyRawValue)
+            if
+                let geographyRawValue = credentials?["geography"] as? Int,
+                let geography = UMPDebugGeography(rawValue: geographyRawValue)
             {
                 debugSettings.geography = geography
                 log("Debug geography updated with backend config", level: .debug)
