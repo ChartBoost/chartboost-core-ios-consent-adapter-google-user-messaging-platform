@@ -14,7 +14,6 @@ private let IABUserDefaultsUSPKey = "IABUSPrivacy_String"
 @objc(CBCGoogleUserMessagingPlatformAdapter)
 @objcMembers
 public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableModule, ConsentAdapter {
-
     // MARK: - Properties
 
     /// The module identifier.
@@ -58,7 +57,8 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
 
     // MARK: - Instantiation and Initialization
 
-    /// Instantiates a ``GoogleUserMessagingPlatformAdapter`` module which can be passed on a call to ``ChartboostCore/initializeSDK(with:moduleObserver:)``.
+    /// Instantiates a ``GoogleUserMessagingPlatformAdapter`` module which can be passed on a call to
+    /// ``ChartboostCore/initializeSDK(with:moduleObserver:)``.
     override public init() {
         super.init()
     }
@@ -157,7 +157,11 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableMo
     /// - parameter viewController: The view controller to present the consent dialog from.
     /// - parameter completion: This handler is called to indicate whether the consent dialog was successfully presented or not.
     /// Note that this is called at the moment the dialog is presented, **not when it is dismissed**.
-    public func showConsentDialog(_ type: ConsentDialogType, from viewController: UIViewController, completion: @escaping (_ succeeded: Bool) -> Void) {
+    public func showConsentDialog(
+        _ type: ConsentDialogType,
+        from viewController: UIViewController,
+        completion: @escaping (_ succeeded: Bool) -> Void
+    ) {
         log("Showing \(type) consent dialog", level: .debug)
 
         DispatchQueue.main.async {  // according to UMP's documentation form methods must be called from the main queue
