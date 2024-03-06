@@ -13,7 +13,7 @@ private let IABUserDefaultsUSPKey = "IABUSPrivacy_String"
 /// Chartboost Core Consent Google User Messaging Platform adapter.
 @objc(CBCGoogleUserMessagingPlatformAdapter)
 @objcMembers
-public final class GoogleUserMessagingPlatformAdapter: NSObject, InitializableModule, ConsentAdapter {
+public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, ConsentAdapter {
     // MARK: - Properties
 
     /// The module identifier.
