@@ -53,7 +53,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     }
 
     /// The observer for changes on UserDefault's consent-related keys.
-    private var userDefaultsObserver: NSObject?
+    private var userDefaultsObserver: Any?
 
     // MARK: - Instantiation and Initialization
 
