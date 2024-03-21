@@ -95,10 +95,10 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     }
 
     /// Sets up the module to make it ready to be used.
-    /// - parameter configuration: A ``ModuleInitializationConfiguration`` for configuring the module.
+    /// - parameter configuration: A ``ModuleConfiguration`` for configuring the module.
     /// - parameter completion: A completion handler to be executed when the module is done initializing.
     /// An error should be passed if the initialization failed, whereas `nil` should be passed if it succeeded.
-    public func initialize(configuration: ModuleInitializationConfiguration, completion: @escaping (Error?) -> Void) {
+    public func initialize(configuration: ModuleConfiguration, completion: @escaping (Error?) -> Void) {
         // Configure the SDK and fetch initial consent status.
         // We don't report consent changes to the delegate here since we are restoring the info from whatever the SDK has saved.
         log("Requesting consent info update", level: .debug)
