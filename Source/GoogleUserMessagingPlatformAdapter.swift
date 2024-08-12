@@ -20,7 +20,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     public let moduleID = "google_user_messaging_platform"
 
     /// The version of the module.
-    public let moduleVersion = "1.2.1.0.0"
+    public let moduleVersion = "1.2.4.0.0"
 
     /// The delegate to be notified whenever any change happens in the CMP consent info.
     /// This delegate is set by Core SDK and is an essential communication channel between Core and the CMP.
@@ -47,7 +47,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     /// Custom keys should only be used by adapters when a corresponding constant is not provided by the Core.
     ///
     /// Predefined consent value constants are also proivded, but are only applicable to non-IAB string keys, like
-    /// ``ConsentKeys/ccpaOptIn`` and ``ConsentKeys/gdprConsentGiven``.
+    /// ``ChartboostCoreSDK/ConsentKeys/ccpaOptIn`` and ``ChartboostCoreSDK/ConsentKeys/gdprConsentGiven``.
     public var consents: [ConsentKey: ConsentValue] {
         userDefaultsIABStrings
     }
