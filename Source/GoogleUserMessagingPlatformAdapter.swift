@@ -20,7 +20,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     public let moduleID = "google_user_messaging_platform"
 
     /// The version of the module.
-    public let moduleVersion = "1.2.4.0.0"
+    public let moduleVersion = "1.2.5.0.0"
 
     /// The delegate to be notified whenever any change happens in the CMP consent info.
     /// This delegate is set by Core SDK and is an essential communication channel between Core and the CMP.
