@@ -1,4 +1,4 @@
-// Copyright 2024-2024 Chartboost, Inc.
+// Copyright 2024-2025 Chartboost, Inc.
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
@@ -20,7 +20,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     public let moduleID = "google_user_messaging_platform"
 
     /// The version of the module.
-    public let moduleVersion = "1.2.7.0.0"
+    public let moduleVersion = "1.3.0.0.0"
 
     /// The delegate to be notified whenever any change happens in the CMP consent info.
     /// This delegate is set by Core SDK and is an essential communication channel between Core and the CMP.
@@ -29,12 +29,12 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
 
     /// Google User Messaging Platform debug settings to pass when the requesting consent info updates.
     /// Make sure to update this property before initialization for it to take effect.
-    public static var debugSettings: UMPDebugSettings?
+    public static var debugSettings: DebugSettings?
 
     /// Indicates whether the CMP has determined that consent should be collected from the user.
     public var shouldCollectConsent: Bool {
-        UMPConsentInformation.sharedInstance.formStatus == .available
-            && UMPConsentInformation.sharedInstance.consentStatus == .required
+        ConsentInformation.shared.formStatus == .available
+        && ConsentInformation.shared.consentStatus == .required
     }
 
     /// Current user consent info as determined by the CMP.
@@ -78,14 +78,14 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
         // Populate debug settings with backend info if available, and only it hasn't already been
         // set programmatically by the publisher.
         if Self.debugSettings == nil {
-            let debugSettings = UMPDebugSettings()
+            let debugSettings = DebugSettings()
             if let testDeviceIdentifiers = credentials?["testDeviceIdentifiers"] as? [String] {
                 debugSettings.testDeviceIdentifiers = testDeviceIdentifiers
                 log("Test device identifiers updated with backend config", level: .debug)
             }
             if
                 let geographyRawValue = credentials?["geography"] as? Int,
-                let geography = UMPDebugGeography(rawValue: geographyRawValue)
+                let geography = DebugGeography(rawValue: geographyRawValue)
             {
                 debugSettings.geography = geography
                 log("Debug geography updated with backend config", level: .debug)
@@ -146,7 +146,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     public func resetConsent(completion: @escaping (_ succeeded: Bool) -> Void) {
         // Reset all consents
         log("Resetting consent", level: .debug)
-        UMPConsentInformation.sharedInstance.reset()
+        ConsentInformation.shared.reset()
         updateConsentInfo(completion: nil)
         completion(true)
     }
@@ -167,7 +167,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
         DispatchQueue.main.async {  // according to UMP's documentation form methods must be called from the main queue
             switch type {
             case .concise:
-                UMPConsentForm.loadAndPresentIfRequired(from: viewController) { [weak self] error in
+                ConsentForm.loadAndPresentIfRequired(from: viewController) { [weak self] error in
                     if let error {
                         self?.log("Failed to show \(type) consent dialog due to error: \(error)", level: .error)
                     } else {
@@ -176,7 +176,7 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
                 }
                 completion(true)
             case .detailed:
-                UMPConsentForm.presentPrivacyOptionsForm(from: viewController) { [weak self] error in
+                ConsentForm.presentPrivacyOptionsForm(from: viewController) { [weak self] error in
                     if let error {
                         self?.log("Failed to show \(type) consent dialog due to error: \(error)", level: .error)
                     } else {
@@ -194,10 +194,10 @@ public final class GoogleUserMessagingPlatformAdapter: NSObject, Module, Consent
     // MARK: - Helpers
 
     private func updateConsentInfo(completion: ((Error?) -> Void)?) {
-        let request = UMPRequestParameters()
-        request.tagForUnderAgeOfConsent = ChartboostCore.analyticsEnvironment.isUserUnderage
+        let request = RequestParameters()
+        request.isTaggedForUnderAgeOfConsent = ChartboostCore.analyticsEnvironment.isUserUnderage
         request.debugSettings = Self.debugSettings
-        UMPConsentInformation.sharedInstance.requestConsentInfoUpdate(with: request) { [weak self] error in
+        ConsentInformation.shared.requestConsentInfoUpdate(with: request) { [weak self] error in
             if let error {
                 self?.log("Consent info update failed with error: \(error)", level: .error)
             } else {
